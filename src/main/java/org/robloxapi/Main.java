@@ -39,6 +39,7 @@ public class Main {
             int playingData = jsonResult.get("playing").asInt();
             BigDecimal visitsData = BigDecimal.valueOf(jsonResult.get("visits").asInt());
 
+
             logger.debug("Name : {}", nameData);
             logger.debug("Playing: {}", playingData);
             logger.debug("Visits: {}", visitsData);
