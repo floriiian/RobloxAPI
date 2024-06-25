@@ -1,15 +1,17 @@
 package org.robloxapi;
-
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import okhttp3.Response;
 import java.io.IOException;
+import java.math.BigInteger;
 
 public class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
     public static void main(String[] args) throws IOException {
+        // Which game you want to request data for
+        BigInteger gameId = new BigInteger("5166944221");
 
         logger.debug("{}", () -> {
             try {
@@ -19,6 +21,7 @@ public class Main {
             }
         });
         logger.debug("balls");
+        String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(gameId.toString()));
 
     }
 

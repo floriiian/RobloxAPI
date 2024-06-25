@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="ALL">
+<Configuration status="WARN">
     <ThresholdFilter level="all"/>
-
     <Appenders>
         <Console name="STDOUT" target="SYSTEM_OUT">
             <PatternLayout pattern="%d %-5p method: [%t] %C{2} (%F:%L) - %m%n"/>
