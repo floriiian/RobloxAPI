@@ -37,8 +37,7 @@ public class Main {
             String nameData = jsonResult.get("name").asText();
             long priceData = jsonResult.get("price").asLong();
             int playingData = jsonResult.get("playing").asInt();
-            BigDecimal visitsData = BigDecimal.valueOf(jsonResult.get("visits").asInt());
-
+            long visitsData = jsonResult.get("visits").asLong();
 
             logger.debug("Name : {}", nameData);
             logger.debug("Playing: {}", playingData);
@@ -47,29 +46,36 @@ public class Main {
 
             try{
                 // Create roblox_game_data
-                stmt = con.createStatement();
-                ResultSet  result = stmt.executeQuery("SELECT " + gameId + " FROM roblox_game_data");
-                if(result.getRow() != 0){
-                    PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, name, playing, visits, price) VALUES (?, ?, ?, ?, ?);");
-                    insert.setBigDecimal(1, gameId);
-                    insert.setString(2, nameData);
-                    insert.setInt(3, playingData);
-                    insert.setBigDecimal(4, visitsData);
-                    insert.setLong(5, priceData);
-                    insert.executeUpdate();
-                    logger.debug("Added{}to database", nameData);
-                }
-                else{
-                    PreparedStatement update = con.prepareStatement("UPDATE  roblox_game_data SET name = ?, playing = ?, visits = ?, price = ? WHERE game_id = ?");
-                    update.setString(1, nameData);
-                    update.setInt(2, playingData);
-                    update.setBigDecimal(3, visitsData);
-                    update.setLong(4, priceData);
-                    update.setBigDecimal(5, gameId);
-                    update.executeUpdate();
-                    logger.debug("Updated {} in database", nameData);
-                }
-                con.commit();
+                try {
+                    // Tries to select game data if existing.
+                    PreparedStatement select = con.prepareStatement("SELECT * FROM roblox_game_data WHERE game_id = ?");
+                    select.setBigDecimal(1, gameId);
+                    ResultSet rs = select.executeQuery();
+
+                    if (rs.next()) {
+
+                        PreparedStatement update = con.prepareStatement("UPDATE  roblox_game_data SET name = ?, playing = ?, visits = ?, price = ? WHERE game_id = ?");
+                        update.setString(1, nameData);
+                        update.setInt(2, playingData);
+                        update.setLong(3, visitsData);
+                        update.setLong(4, priceData);
+                        update.setBigDecimal(5, gameId);
+                        update.executeUpdate();
+                        logger.debug("Updated {} in database", nameData);
+                        con.commit();
+                    }
+                }catch(SQLException e){
+                    logger.debug( "Game does not exist in database yet; inserting it: ", e);
+                        PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, name, playing, visits, price) VALUES (?, ?, ?, ?, ?);");
+                        insert.setBigDecimal(1, gameId);
+                        insert.setString(2, nameData);
+                        insert.setInt(3, playingData);
+                        insert.setLong(4, visitsData);
+                        insert.setLong(5, priceData);
+                        insert.execute();
+                        logger.debug("Added {} to database", nameData);
+                        con.commit();
+                    }
                 stmt.close();
             }catch (SQLException e){
                 logger.debug("Was not able to create or update {} in database: {}", nameData, e);
@@ -79,7 +85,6 @@ public class Main {
             logger.error("{Failed to send API request: }", e);
         }
     }
-
     // Sends API Requests
     public static String requestData(String url) throws IOException {
         OkHttpClient client = new OkHttpClient(); // New Client
@@ -101,18 +106,19 @@ public class Main {
             try {
                 stmt = con.createStatement();
                 stmt.executeUpdate("CREATE DATABASE roblox_games");
-                con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/roblox_games", "postgres", "Creeper008");
+                con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/roblox_games", username, password);
+                con.setAutoCommit(false);
                 try {
                     stmt = con.createStatement();
                     stmt.executeUpdate(
                             "CREATE TABLE roblox_game_data" +
                                     "(" +
-                                    "ID SERIAL NOT NULL PRIMARY KEY," +
-                                    "GAME_ID INT NOT NULL," +
-                                    "NAME TEXT NOT NULL," +
-                                    "PLAYING INT NOT NULL," +
-                                    "VISITS BIGINT NOT NULL," +
-                                    "PRICE MONEY)"
+                                    "id SERIAL NOT NULL PRIMARY KEY," +
+                                    "game_id BIGINT  NOT NULL," +
+                                    "name TEXT NOT NULL," +
+                                    "playing INT NOT NULL," +
+                                    "visits BIGINT NOT NULL," +
+                                    "price MONEY)"
                     );
 
                 }catch(SQLException e){
