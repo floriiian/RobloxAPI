@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import okhttp3.Response;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
 import java.text.NumberFormat;
@@ -21,7 +22,7 @@ public class Main {
     // Where the action happens
     public static void main(String[] args) throws IOException {
         // Which game you want to request data for
-        BigInteger gameId = new BigInteger("5166944221");
+        BigDecimal gameId = new BigDecimal("5166944221");
         ObjectMapper mapper = new ObjectMapper();
         NumberFormat numForm = NumberFormat.getCurrencyInstance(Locale.GERMANY);
 
@@ -34,33 +35,40 @@ public class Main {
 
             JsonNode jsonResult  = mapper.readTree(requestResult).get("data").get(0);
             String nameData = jsonResult.get("name").asText();
-            String priceData = numForm.format(jsonResult.get("price").asLong());
+            long priceData = jsonResult.get("price").asLong();
             int playingData = jsonResult.get("playing").asInt();
-            int visitsData = jsonResult.get("visits").asInt();
+            BigDecimal visitsData = BigDecimal.valueOf(jsonResult.get("visits").asInt());
 
             logger.debug("Name : {}", nameData);
             logger.debug("Playing: {}", playingData);
             logger.debug("Visits: {}", visitsData);
-            logger.debug("Price: {}", priceData);
+            logger.debug("Price: {}", numForm.format(priceData));
 
             try{
                 // Create roblox_game_data
                 stmt = con.createStatement();
-                ResultSet  result = stmt.executeQuery("SELECT " + nameData + " FROM roblox_game_data");
-                if(!result.first()){
-                    stmt = con.createStatement();
-                    stmt.executeUpdate(
-                            "INSERT INTO roblox_game_data (NAME, PLAYING,VISITS,PRICE) "
-                            + "VALUES (" + nameData + "," + playingData + "," +  visitsData + "," + priceData  + ")"
-                    );
+                ResultSet  result = stmt.executeQuery("SELECT " + gameId + " FROM roblox_game_data");
+                if(result.getRow() != 0){
+                    PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, name, playing, visits, price) VALUES (?, ?, ?, ?, ?);");
+                    insert.setBigDecimal(1, gameId);
+                    insert.setString(2, nameData);
+                    insert.setInt(3, playingData);
+                    insert.setBigDecimal(4, visitsData);
+                    insert.setLong(5, priceData);
+                    insert.executeUpdate();
                     logger.debug("Added{}to database", nameData);
                 }
                 else{
-                    stmt = con.createStatement();
-                    stmt.executeUpdate("UPDATE roblox_game_data SET (NAME, PLAYING, VISITS, PRICE )" + "VALUES(" + nameData  + "," + playingData  + "," +  visitsData  + "," + priceData + ") WHERE NAME = "  + nameData +  ")");
-                    con.commit();
+                    PreparedStatement update = con.prepareStatement("UPDATE  roblox_game_data SET name = ?, playing = ?, visits = ?, price = ? WHERE game_id = ?");
+                    update.setString(1, nameData);
+                    update.setInt(2, playingData);
+                    update.setBigDecimal(3, visitsData);
+                    update.setLong(4, priceData);
+                    update.setBigDecimal(5, gameId);
+                    update.executeUpdate();
                     logger.debug("Updated {} in database", nameData);
                 }
+                con.commit();
                 stmt.close();
             }catch (SQLException e){
                 logger.debug("Was not able to create or update {} in database: {}", nameData, e);
@@ -87,22 +95,25 @@ public class Main {
         // Initiate connection to database
         try {
             Class.forName("org.postgresql.Driver");
-            con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/", "postgres", "Creeper008");
+            con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/", username, password);
             logger.info("Database connection initialized.");
             try {
                 stmt = con.createStatement();
                 stmt.executeUpdate("CREATE DATABASE roblox_games");
+                con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/roblox_games", "postgres", "Creeper008");
                 try {
+                    stmt = con.createStatement();
+                    stmt.executeUpdate(
+                            "CREATE TABLE roblox_game_data" +
+                                    "(" +
+                                    "ID SERIAL NOT NULL PRIMARY KEY," +
+                                    "GAME_ID INT NOT NULL," +
+                                    "NAME TEXT NOT NULL," +
+                                    "PLAYING INT NOT NULL," +
+                                    "VISITS BIGINT NOT NULL," +
+                                    "PRICE MONEY)"
+                    );
 
-                stmt.executeUpdate(
-                        "CREATE TABLE roblox_game_data" +
-                                "(" +
-                                "ID SERIAL NOT NULL PRIMARY KEY," +
-                                "NAME TEXT NOT NULL," +
-                                "PLAYING INT NOT NULL," +
-                                "VISITS BIGINT NOT NULL," +
-                                "PRICE MONEY)"
-                );
                 }catch(SQLException e){
                     logger.debug("Error creating \"roblox_game_data\": ", e);
                 }
@@ -110,12 +121,6 @@ public class Main {
                 logger.debug("Database: \"roblox_games\" created successfully.\n");
             }catch (SQLException e){
                 logger.debug("Database: \"roblox_games\" already exists; skipping creation.\n");
-            }
-            try {
-                con = null;
-                con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/roblox_games", "postgres", "Creeper008");
-            } catch (SQLException e){
-                logger.debug("Failed to connect to database: ", e);
             }
         } catch (Exception e) {
             logger.error(e);
