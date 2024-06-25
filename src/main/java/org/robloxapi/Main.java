@@ -12,17 +12,12 @@ public class Main {
     public static void main(String[] args) throws IOException {
         // Which game you want to request data for
         BigInteger gameId = new BigInteger("5166944221");
-
-        logger.debug("{}", () -> {
-            try {
-                return requestData("https://games.roblox.com/v1/games?universeIds=5166944221");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        logger.debug("balls");
-        String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(gameId.toString()));
-
+        try{
+            String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(gameId.toString()));
+            logger.debug("Successfully sent request to API");
+        }catch(Exception e){
+            logger.error("{Failed to send API request: }", e);
+        }
     }
 
     public static String requestData(String url) throws IOException {
