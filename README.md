@@ -1,8 +1,8 @@
-#Roblox API (Kinda)
+# Roblox API (Kinda)
 This program will fetch the playercounts of games you specify and save them into a database every 30 seconds, 
 from there on you are free to do whatever you want with them.
 
-##How to use
+## How to use
 - Download the program
 - Download PostgreSQL: https://www.postgresql.org/
 - Install PostgreSQL and change the port inside the program to the port your PostgreSQL server is running on:
