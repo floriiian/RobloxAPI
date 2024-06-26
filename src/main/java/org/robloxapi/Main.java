@@ -22,7 +22,7 @@ public class Main {
     // Where the action happens
     public static void main(String[] args) throws IOException {
         // Which game you want to request data for
-        BigDecimal gameId = new BigDecimal("5166944221");
+        long gameId = Long.parseLong("5166944221");
         ObjectMapper mapper = new ObjectMapper();
         NumberFormat numForm = NumberFormat.getCurrencyInstance(Locale.GERMANY);
 
@@ -30,7 +30,7 @@ public class Main {
         prepareDatabase("postgres", "Creeper008");
 
         try{
-            String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(gameId.toString()));
+            String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(String.valueOf(gameId)));
             logger.info("Successfully sent request to API");
 
             JsonNode jsonResult  = mapper.readTree(requestResult).get("data").get(0);
@@ -46,39 +46,16 @@ public class Main {
 
             try{
                 // Create roblox_game_data
-                try {
-                    // Tries to select game data if existing.
-                    PreparedStatement select = con.prepareStatement("SELECT * FROM roblox_game_data WHERE game_id = ?");
-                    select.setBigDecimal(1, gameId);
-                    ResultSet rs = select.executeQuery();
-
-                    if (rs.next()) {
-
-                        PreparedStatement update = con.prepareStatement("UPDATE  roblox_game_data SET name = ?, playing = ?, visits = ?, price = ? WHERE game_id = ?");
-                        update.setString(1, nameData);
-                        update.setInt(2, playingData);
-                        update.setLong(3, visitsData);
-                        update.setLong(4, priceData);
-                        update.setBigDecimal(5, gameId);
-                        update.executeUpdate();
-                        logger.debug("Updated {} in database", nameData);
-                        con.commit();
-                    }
-                }catch(SQLException e){
-                    logger.debug( "Game does not exist in database yet; inserting it: ", e);
-                        PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, name, playing, visits, price) VALUES (?, ?, ?, ?, ?);");
-                        insert.setBigDecimal(1, gameId);
-                        insert.setString(2, nameData);
-                        insert.setInt(3, playingData);
-                        insert.setLong(4, visitsData);
-                        insert.setLong(5, priceData);
-                        insert.execute();
-                        logger.debug("Added {} to database", nameData);
-                        con.commit();
-                    }
+                PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, playing, timestamp) VALUES (?, ?, ?);");
+                insert.setLong(1, gameId);
+                insert.setLong(2, playingData);
+                insert.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                insert.execute();
+                logger.debug("Added {} to database", nameData);
+                con.commit();
                 stmt.close();
             }catch (SQLException e){
-                logger.debug("Was not able to create or update {} in database: {}", nameData, e);
+                logger.debug("Was not able to create {} in database: {}", nameData, e);
             }
 
         }catch(Exception e){
@@ -108,6 +85,7 @@ public class Main {
                 stmt.executeUpdate("CREATE DATABASE roblox_games");
                 con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/roblox_games", username, password);
                 con.setAutoCommit(false);
+                logger.debug("Database: \"roblox_games\" created successfully.\n");
                 try {
                     stmt = con.createStatement();
                     stmt.executeUpdate(
@@ -115,17 +93,15 @@ public class Main {
                                     "(" +
                                     "id SERIAL NOT NULL PRIMARY KEY," +
                                     "game_id BIGINT  NOT NULL," +
-                                    "name TEXT NOT NULL," +
                                     "playing INT NOT NULL," +
-                                    "visits BIGINT NOT NULL," +
-                                    "price MONEY)"
+                                    "timestamp TIMESTAMP NOT NULL"
+                                    + ")"
                     );
-
+                    logger.debug("Table: \"roblox_game_data\" has been created.");
                 }catch(SQLException e){
                     logger.debug("Error creating \"roblox_game_data\": ", e);
                 }
                 stmt.close();
-                logger.debug("Database: \"roblox_games\" created successfully.\n");
             }catch (SQLException e){
                 logger.debug("Database: \"roblox_games\" already exists; skipping creation.\n");
             }
