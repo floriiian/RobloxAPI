@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.Scanner;
 
 
 public class Main {
@@ -20,41 +21,47 @@ public class Main {
     // Where the action happens
     public static void main(String[] args) throws InterruptedException {
         // Which game you want to request data for
-        long gameId = Long.parseLong("5166944221");
         ObjectMapper mapper = new ObjectMapper();
         NumberFormat numForm = NumberFormat.getCurrencyInstance(Locale.GERMANY);
 
         // Connect to database
         prepareDatabase("postgres", "Creeper008");
 
-        while (true) {
-            try {
-                String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(String.valueOf(gameId)));
-                logger.info("Successfully sent request to API");
 
-                JsonNode jsonResult = mapper.readTree(requestResult).get("data").get(0);
-                String nameData = jsonResult.get("name").asText();
-                int playingData = jsonResult.get("playing").asInt();
-
+        Scanner getGameId = new Scanner(System.in);
+        System.out.print("Roblox Game-ID: ");
+        if(getGameId.hasNextLine()) {
+            String input = getGameId.nextLine();
+            long gameId = Long.parseLong(input);
+            while (true) {
                 try {
-                    // Create roblox_game_data
-                    PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, playing, timestamp) VALUES (?, ?, ?);");
-                    insert.setLong(1, gameId);
-                    insert.setLong(2, playingData);
-                    insert.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
-                    insert.execute();
-                    logger.debug("Added new entry for {} into database", nameData);
-                    con.commit();
-                    stmt.close();
-                } catch (SQLException e) {
-                    logger.debug("Was not able to create {} in database: {}", nameData, e);
+                    String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(String.valueOf(gameId)));
+                    logger.info("Successfully sent request to API");
+
+                    JsonNode jsonResult = mapper.readTree(requestResult).get("data").get(0);
+                    String nameData = jsonResult.get("name").asText();
+                    int playingData = jsonResult.get("playing").asInt();
+
+                    try {
+                        // Create roblox_game_data
+                        PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, playing, timestamp) VALUES (?, ?, ?);");
+                        insert.setLong(1, gameId);
+                        insert.setLong(2, playingData);
+                        insert.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                        insert.execute();
+                        logger.debug("Added new entry for {} into database", nameData);
+                        con.commit();
+                        stmt.close();
+                    } catch (SQLException e) {
+                        logger.debug("Was not able to create {} in database: {}", nameData, e);
+                    }
+                } catch (Exception e) {
+                    logger.error("{Failed to send API request: }", e);
                 }
-            } catch (Exception e) {
-                logger.error("{Failed to send API request: }", e);
+                // Wait till next request to prevent API limiting and spam.
+                Thread.sleep(30000);
+                }
             }
-            // Wait till next request to prevent API limiting and spam.
-            Thread.sleep(30000);
-        }
     }
     // Sends API Requests
     public static String requestData(String url) throws IOException {
