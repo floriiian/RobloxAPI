@@ -55,7 +55,6 @@ public class Main {
             }catch (SQLException e){
                 logger.debug("Was not able to create {} in database: {}", nameData, e);
             }
-
         }catch(Exception e){
             logger.error("{Failed to send API request: }", e);
         }
