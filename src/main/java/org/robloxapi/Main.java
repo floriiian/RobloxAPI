@@ -7,8 +7,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import okhttp3.Response;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.*;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -20,7 +18,7 @@ public class Main {
     public static Statement stmt = null;
 
     // Where the action happens
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args){
         // Which game you want to request data for
         long gameId = Long.parseLong("5166944221");
         ObjectMapper mapper = new ObjectMapper();
@@ -85,7 +83,7 @@ public class Main {
                 stmt.executeUpdate("CREATE DATABASE roblox_games");
                 con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/roblox_games", username, password);
                 con.setAutoCommit(false);
-                logger.debug("Database: \"roblox_games\" created successfully.\n");
+                logger.debug("Database: \"roblox_games\" created successfully.");
                 try {
                     stmt = con.createStatement();
                     stmt.executeUpdate(
@@ -97,7 +95,7 @@ public class Main {
                                     "timestamp TIMESTAMP NOT NULL"
                                     + ")"
                     );
-                    logger.debug("Table: \"roblox_game_data\" has been created.");
+                    logger.debug("Table: \"roblox_game_data\" has been created.\n");
                 }catch(SQLException e){
                     logger.debug("Error creating \"roblox_game_data\": ", e);
                 }
