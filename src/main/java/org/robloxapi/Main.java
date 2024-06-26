@@ -103,6 +103,8 @@ public class Main {
             }catch (SQLException e){
                 logger.debug("Database: \"roblox_games\" already exists; skipping creation.\n");
             }
+            con = DriverManager.getConnection("jdbc:postgresql://localhost:5432/roblox_games", username, password);
+            con.setAutoCommit(false);
         } catch (Exception e) {
             logger.error(e);
             System.exit(0);
