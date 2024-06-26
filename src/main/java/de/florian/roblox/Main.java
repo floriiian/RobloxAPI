@@ -15,10 +15,9 @@ public class Main {
 
     // Where the action happens
     public static void main(String[] args) throws InterruptedException {
-        // Which game you want to request data for
+
         ObjectMapper mapper = new ObjectMapper();
 
-        // Connect to database
         Connection connection = prepareDatabase("postgres", "Creeper008");
 
         Scanner getGameId = new Scanner(System.in);
@@ -37,16 +36,17 @@ public class Main {
 
                 LOGGER.info("Successfully sent request to API");
 
+                // Reads requestResult and inserts it into an Object (Data)
                 Data data = mapper.readValue(requestResult, Data.class);
 
                 Game game = data.getData()[0];
 
                 // Create roblox_game_data
-                try (PreparedStatement insert = connection.prepareStatement("INSERT INTO roblox_game_data (game_name game_id, playing, timestamp) VALUES (?, ?, ?, ?)"))
+                try (PreparedStatement insert = connection.prepareStatement("INSERT INTO roblox_game_data (game_name, game_id, playing, timestamp) VALUES (?, ?, ?, ?)"))
                 {
                     insert.setString(1, game.getName());
                     insert.setLong(2, game.getId());
-                    insert.setLong(3, game.getPlayerCount());
+                    insert.setInt(3, game.getPlaying());
                     insert.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
 
                     insert.execute();
@@ -59,7 +59,7 @@ public class Main {
                 LOGGER.error("{Failed to send API request: }", e);
             }
 
-            Thread.sleep(30000);
+            Thread.sleep(10000);
         }
     }
     // Sends API Requests
@@ -87,17 +87,20 @@ public class Main {
             try (Statement statement = connection.createStatement())
             {
                 statement.executeUpdate("CREATE DATABASE roblox_games");
+
+                LOGGER.debug("Database: \"roblox_games\" created successfully.");
+            }
+            catch(SQLException e){
+                LOGGER.debug("Database already exists. Skipping.");
             }
 
             connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/roblox_games", username, password);
             connection.setAutoCommit(false);
 
-            LOGGER.debug("Database: \"roblox_games\" created successfully.");
-
             try (Statement statement = connection.createStatement())
             {
                 statement.executeUpdate(
-                        "CREATE TABLE roblox_game_data" +
+                        "CREATE TABLE IF NOT EXISTS roblox_game_data" +
                                 "(" +
                                 "id SERIAL NOT NULL PRIMARY KEY," +
                                 "game_name TEXT  NOT NULL," +

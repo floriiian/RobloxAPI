@@ -1,6 +1,9 @@
 package de.florian.roblox;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.logging.Logger;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Game
@@ -8,43 +11,40 @@ public class Game
     private long id;
     private long rootPlaceId;
     private String name;
-    private int playerCount;
+    @JsonProperty("playing")
+    private int playing;
 
     public Game()
     {
     }
 
-    public Game(long universeId, long rootPlaceId, String name, int playerCount)
+    public Game(long id, long rootPlaceId, String name, int playing)
     {
-        this.id = universeId;
+        this.id = id;
         this.rootPlaceId = rootPlaceId;
         this.name = name;
-        this.playerCount = playerCount;
+        this.playing = playing;
     }
 
     public long getId() {
         return id;
     }
 
-    public long getRootPlaceId() {
-        return rootPlaceId;
-    }
-
     public String getName() {
         return name;
     }
 
-    public int getPlayerCount() {
-        return playerCount;
+    public int getPlaying() {
+        return playing;
     }
 
     @Override
     public String toString() {
         return "Game{" +
-                "universeId=" + id +
+                "id=" + id +
                 ", rootPlaceId=" + rootPlaceId +
                 ", name='" + name + '\'' +
-                ", playerCount=" + playerCount +
+                ", playing=" + playing +
                 '}';
     }
 }
