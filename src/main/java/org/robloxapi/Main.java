@@ -18,7 +18,7 @@ public class Main {
     public static Statement stmt = null;
 
     // Where the action happens
-    public static void main(String[] args){
+    public static void main(String[] args) throws InterruptedException {
         // Which game you want to request data for
         long gameId = Long.parseLong("5166944221");
         ObjectMapper mapper = new ObjectMapper();
@@ -27,36 +27,33 @@ public class Main {
         // Connect to database
         prepareDatabase("postgres", "Creeper008");
 
-        try{
-            String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(String.valueOf(gameId)));
-            logger.info("Successfully sent request to API");
+        while (true) {
+            try {
+                String requestResult = requestData("https://games.roblox.com/v1/games?universeIds=".concat(String.valueOf(gameId)));
+                logger.info("Successfully sent request to API");
 
-            JsonNode jsonResult  = mapper.readTree(requestResult).get("data").get(0);
-            String nameData = jsonResult.get("name").asText();
-            long priceData = jsonResult.get("price").asLong();
-            int playingData = jsonResult.get("playing").asInt();
-            long visitsData = jsonResult.get("visits").asLong();
+                JsonNode jsonResult = mapper.readTree(requestResult).get("data").get(0);
+                String nameData = jsonResult.get("name").asText();
+                int playingData = jsonResult.get("playing").asInt();
 
-            logger.debug("Name : {}", nameData);
-            logger.debug("Playing: {}", playingData);
-            logger.debug("Visits: {}", visitsData);
-            logger.debug("Price: {}", numForm.format(priceData));
-
-            try{
-                // Create roblox_game_data
-                PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, playing, timestamp) VALUES (?, ?, ?);");
-                insert.setLong(1, gameId);
-                insert.setLong(2, playingData);
-                insert.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
-                insert.execute();
-                logger.debug("Added {} to database", nameData);
-                con.commit();
-                stmt.close();
-            }catch (SQLException e){
-                logger.debug("Was not able to create {} in database: {}", nameData, e);
+                try {
+                    // Create roblox_game_data
+                    PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, playing, timestamp) VALUES (?, ?, ?);");
+                    insert.setLong(1, gameId);
+                    insert.setLong(2, playingData);
+                    insert.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                    insert.execute();
+                    logger.debug("Added new entry for {} into database", nameData);
+                    con.commit();
+                    stmt.close();
+                } catch (SQLException e) {
+                    logger.debug("Was not able to create {} in database: {}", nameData, e);
+                }
+            } catch (Exception e) {
+                logger.error("{Failed to send API request: }", e);
             }
-        }catch(Exception e){
-            logger.error("{Failed to send API request: }", e);
+            // Wait till next request to prevent API limiting and spam.
+            Thread.sleep(30000);
         }
     }
     // Sends API Requests
