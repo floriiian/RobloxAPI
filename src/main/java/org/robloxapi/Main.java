@@ -44,10 +44,11 @@ public class Main {
 
                     try {
                         // Create roblox_game_data
-                        PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_id, playing, timestamp) VALUES (?, ?, ?);");
-                        insert.setLong(1, gameId);
-                        insert.setLong(2, playingData);
-                        insert.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                        PreparedStatement insert = con.prepareStatement("INSERT INTO roblox_game_data (game_name game_id, playing, timestamp) VALUES (?, ?, ?, ?);");
+                        insert.setString(1, nameData);
+                        insert.setLong(2, gameId);
+                        insert.setLong(3, playingData);
+                        insert.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
                         insert.execute();
                         logger.debug("Added new entry for {} into database", nameData);
                         con.commit();
@@ -93,6 +94,7 @@ public class Main {
                             "CREATE TABLE roblox_game_data" +
                                     "(" +
                                     "id SERIAL NOT NULL PRIMARY KEY," +
+                                    "game_name TEXT  NOT NULL," +
                                     "game_id BIGINT  NOT NULL," +
                                     "playing INT NOT NULL," +
                                     "timestamp TIMESTAMP NOT NULL"
