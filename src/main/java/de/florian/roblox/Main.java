@@ -18,7 +18,7 @@ public class Main {
 
         ObjectMapper mapper = new ObjectMapper();
 
-        Connection connection = prepareDatabase("postgres", "Creeper008");
+        Connection connection = prepareDatabase("postgres", "yourpassword");
 
         Scanner getGameId = new Scanner(System.in);
 
