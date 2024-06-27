@@ -1,4 +1,4 @@
-# Roblox API (Kinda)
+# Roblox Grabber
 This program will fetch the playercounts of games you specify every 30 seconds and then save them into a database, 
 from there on you are free to do whatever you want with them.
 
